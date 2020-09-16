@@ -15,12 +15,12 @@ ISRaD.report(database, report)
 Generate basic summary reports of ISRaD data
 }
 \details{
-: Wrapper for the simple reporting functions ISRaD.rep.count.all, ISRaD.rep.count.frc, ISRaD.rep.entry.stats, ISRaD.rep.site.map
+Wrapper for the simple reporting functions ISRaD.rep.count.all, ISRaD.rep.count.frc, ISRaD.rep.entry.stats, ISRaD.rep.site.map
 }
 \examples{
 \donttest{
-# Obtain current ISRaD data
-database <- ISRaD.getdata(tempdir(), dataset = "full", extra = FALSE)
+# Load example dataset Gaudinski_2001
+database <- ISRaD::Gaudinski_2001
 # Report metadata statistics
 ISRaD.report(database, report = "entry.stats")
 # Report summary statistics for all levels of the database
@@ -28,4 +28,5 @@ ISRaD.report(database, report = "count.all")
 # Generate a map of all ISRaD sites
 ISRaD.report(database, report = "site.map")
 }
+
 }

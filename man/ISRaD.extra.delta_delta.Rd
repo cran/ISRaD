@@ -12,7 +12,7 @@ ISRaD.extra.delta_delta(database, future = TRUE)
 \item{future}{Project atmospheric radiocarbon into the future? TRUE/FALSE}
 }
 \value{
-returns ISRaD_data object with new delta delta columns in relevant tables
+ISRaD_data object with new delta delta columns in relevant tables.
 }
 \description{
 Calculates the difference between sample delta 14C and the atmosphere for the year of collection (delta-delta)
@@ -35,7 +35,7 @@ database.x <- ISRaD.extra.fill_14c(database.x)
 database.x <- ISRaD.extra.delta_delta(database.x)
 }
 \references{
-Graven et al. 2017 <https://www.geosci-model-dev.net/10/4405/2017/gmd-10-4405-2017.pdf>;  Sierra, C. "Forecasting atmospheric radiocarbon decline to pre-bomb values", Radiocarbon, Vol 60, Nr 4, 2018, p 1055–1066 DOI:10.1017/RDC.2018.33
+Graven et al. 2017 <https://www.geosci-model-dev.net/10/4405/2017/gmd-10-4405-2017.pdf>;  Sierra, C. "Forecasting atmospheric radiocarbon decline to pre-bomb values", Radiocarbon, Vol 60, Nr 4, 2018, p 1055.1066 DOI:10.1017/RDC.2018.33
 }
 \author{
 J. Beem-Miller and C. Hicks-Pries

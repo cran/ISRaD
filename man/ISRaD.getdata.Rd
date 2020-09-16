@@ -4,8 +4,8 @@
 \alias{ISRaD.getdata}
 \title{ISRaD.getdata}
 \usage{
-ISRaD.getdata(directory, dataset = "full", extra = F,
-  force_download = F)
+ISRaD.getdata(directory, dataset = "full", extra = FALSE,
+  force_download = FALSE)
 }
 \arguments{
 \item{directory}{Location of ISRaD_database_files folder. If not found, it will be created.}
@@ -20,7 +20,7 @@ ISRaD.getdata(directory, dataset = "full", extra = F,
 ISRaD data object
 }
 \description{
-: Retrieves most recent version of ISRaD data from github
+Retrieves most recent version of ISRaD data from github
 }
 \examples{
 # Return full dataset ("full")

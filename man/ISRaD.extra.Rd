@@ -12,7 +12,7 @@ ISRaD.extra(database, geodata_directory)
 \item{geodata_directory}{directory where geospatial data are found}
 }
 \value{
-Returns new ISRaD_extra object with derived, transformed, and filled columns
+New ISRaD_extra object with derived, transformed, and filled columns.
 }
 \description{
 Fills in transformed and geospatial data where possible, generating an enhanced version of ISRaD.
@@ -26,6 +26,7 @@ Fills fraction modern, delta 14C, delta-delta, profile coordinates, bulk density
 database <- ISRaD::Gaudinski_2001
 # Fill ISRaD.extra data
 database.x <- ISRaD.extra(database,
- geodata_directory = system.file("extdata", "geodata_directory", package = "ISRaD"))
+  geodata_directory = system.file("extdata", "geodata_directory", package = "ISRaD")
+)
 }
 }

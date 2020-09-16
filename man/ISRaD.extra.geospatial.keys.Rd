@@ -12,7 +12,7 @@ ISRaD.extra.geospatial.keys(database, geodata_keys)
 \item{geodata_keys}{directory where geospatial data are found}
 }
 \value{
-returns updated ISRaD_extra object with recoded columns
+Updated ISRaD_extra object with recoded columns.
 }
 \description{
 Recode numeric values from categorical geospatial data products
@@ -30,11 +30,13 @@ database <- ISRaD::Gaudinski_2001
 database <- ISRaD.extra.fill_coords(database)
 # Fill geospatial data
 database.x <- ISRaD.extra.geospatial(database,
- geodata_directory = system.file("extdata", "geodata_directory", package = "ISRaD"),
- fillWorldClim = FALSE)
-# NB: example geospatial data in the ISRaD package have been clipped
-#     to the extent of the Gaudinski_2001 dataset
+  geodata_directory = system.file("extdata", "geodata_directory", package = "ISRaD"),
+  fillWorldClim = FALSE
+)
+# Recode numeric data to categorical
 database.x <- ISRaD.extra.geospatial.keys(database.x,
- geodata_keys = system.file("extdata", "geodata_keys", package = "ISRaD"))
+  geodata_keys = system.file("extdata", "geodata_keys", package = "ISRaD")
+)
 }
+
 }

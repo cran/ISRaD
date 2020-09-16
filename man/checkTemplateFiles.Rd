@@ -4,16 +4,16 @@
 \alias{checkTemplateFiles}
 \title{Check ISRaD Template/Info files}
 \usage{
-checkTemplateFiles(outfile = "", verbose = T)
+checkTemplateFiles(outfile = "", verbose = TRUE)
 }
 \arguments{
 \item{outfile}{file to dump the output report. Defaults to an empty string that will print
-to standard output.}
+to standard output}
 
 \item{verbose}{if TRUE (default) will print output to specified outfile}
 }
 \value{
-returns NULL
+Nothing (run for side effects).
 }
 \description{
 Check that the template information file and the template file match appropriately.

@@ -2,11 +2,11 @@
 #'
 #' @description Fills fraction modern from delta 14C if fraction modern not reported.
 #' @param database ISRaD dataset object.
-#' @details: Warning: xxx_obs_date_y columns must be filled for this to work!
-#' @author: J. Beem-Miller & A. Hoyt
-#' @references: Stuiver and Polach, 1977
+#' @details Warning: xxx_obs_date_y columns must be filled for this to work!
+#' @author J. Beem-Miller & A. Hoyt
+#' @references Stuiver and Polach, 1977
 #' @export
-#' @return returns ISRaD_data object with filled fraction modern columns
+#' @return ISRaD_data object with filled fraction modern columns.
 #' @examples
 #' # Load example dataset Gaudinski_2001
 #' database <- ISRaD::Gaudinski_2001
@@ -14,14 +14,14 @@
 #' database.x <- ISRaD.extra.fill_dates(database)
 #' # Fill fraction modern from delta 14C
 #' database.x <- ISRaD.extra.fill_fm(database.x)
-
-ISRaD.extra.fill_fm<-function(database){
+ISRaD.extra.fill_fm <- function(database) {
+  stopifnot(is_israd_database(database))
 
   # function to calculate delta 14C from fraction modern and obs year if not reported
   calc_fm <- function(df, d14c, obs_date_y, fraction_modern) {
     lambda <- 0.00012097 # = 1/(true mean life of 14C)
-    ix <- which(is.na(df[,fraction_modern]) & !is.na(df[,d14c]))
-    df[ix, fraction_modern] <- (((df[ix, d14c]/1000)+1) / exp(lambda*(1950-df[ix, obs_date_y])))
+    ix <- which(is.na(df[, fraction_modern]) & !is.na(df[, d14c]))
+    df[ix, fraction_modern] <- (((df[ix, d14c] / 1000) + 1) / exp(lambda * (1950 - df[ix, obs_date_y])))
     return(df)
   }
 
