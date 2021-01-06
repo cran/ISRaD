@@ -1,3 +1,11 @@
+# Updated release for CRAN, early January 2021
+ISRaD 1.7.8
+
+## Notes
+* "ISRaD.extra.geospatial" function now fills climate data from WorldClim v2, specifically 30" resolution, data averaged over the period 1970 to 2000, and fills soil moisture data from TerraClim, at 1/24 of a degree resolution (ca. 4 km), data averaged over the period 1981 to 2010
+* WorldClim v1 data is no longer served in ISRaD_extra nor returned from the ISRaD.extra functions
+* "convert_fm_d14c" function had an error in the unicode message that is now fixed
+
 # New package version for CRAN, mid September 2020
 ISRaD 1.5.6
 
