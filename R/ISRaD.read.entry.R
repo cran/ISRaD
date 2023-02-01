@@ -2,7 +2,7 @@
 #'
 #' @description Reads ISRaD data object from Excel file in standard template format
 #' @param entry ISRaD data object.
-#' @param template_file Directory path and name of template file to use (defaults to the ISRaD_Master_Template file built into the package). Not recommended to change this.
+#' @param template_file Directory path and name of template file to use (defaults to the ISRaD_Master_Template file built into the package).
 #' @author J. Beem-Miller
 #' @export
 #' @importFrom readxl read_excel excel_sheets
@@ -55,7 +55,5 @@ ISRaD.read.entry <- function(entry,
   # put in list to name appropriately
   new_list <- list(entryR)
   names(new_list) <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(entry))
-
-  # extract list element to .GlobalEnv to preserve name
-  invisible(list2env(new_list, envir = .GlobalEnv))
+  return(new_list)
 }

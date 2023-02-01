@@ -50,7 +50,7 @@ compile <- function(dataset_directory,
   stopifnot(is.logical(verbose))
 
   # Constants
-  LIST_FILE <- "ISRaD_list.xlsx"
+  LIST_FILE <- "ISRaD_data.rda"
   DB_DIR <- "database"
   QAQC_DIR <- "QAQC"
 
@@ -106,17 +106,16 @@ compile <- function(dataset_directory,
   if (file.exists(file.path(dataset_directory, DB_DIR, LIST_FILE))) {
 
     # load existing database
-    ISRaD_old <- lapply(
-      excel_sheets(file.path(dataset_directory, DB_DIR, LIST_FILE))[1:8],
-      function(s) data.frame(read_excel(file.path(dataset_directory, DB_DIR, LIST_FILE), sheet = s))
-    )
-    names(ISRaD_old) <- excel_sheets(file.path(dataset_directory, DB_DIR, LIST_FILE))[1:8]
-    # convert to character
-    ISRaD_old <- lapply(ISRaD_old, function(x) lapply(x, as.character))
-    ISRaD_old <- lapply(ISRaD_old, as.data.frame, stringsAsFactors = FALSE)
+    load(file.path(dataset_directory, DB_DIR, LIST_FILE)) # obj "ISRaD_data"
+    # convert to character and coerce to list of data frames
+    ISRaD_chr <- lapply(ISRaD_data, function(x) lapply(x, as.character))
+    ISRaD_chr <- lapply(ISRaD_chr, as.data.frame, stringsAsFactors = FALSE)
+
+    # remove old version of ISRaD
+    rm(ISRaD_data)
 
     # Split each table by entry_name
-    ISRaD_old_list <- lapply(ISRaD_old, function(x) split(x, x$entry_name))
+    ISRaD_old_list <- lapply(ISRaD_chr, function(x) split(x, x$entry_name))
 
     # compile new templates and check against existing data
     for (d in seq_along(data_files)) {
@@ -125,14 +124,16 @@ compile <- function(dataset_directory,
       soilcarbon_data <- lapply(excel_sheets(data_files[d])[1:8], function(s) data.frame(read_excel(data_files[d], sheet = s)))
       names(soilcarbon_data) <- excel_sheets(data_files[d])[1:8]
 
-      # trim description/empty rows/empty cols
+      # trim description rows
       soilcarbon_data <- lapply(soilcarbon_data, function(x) x <- x[-1:-2, ])
+      # trim trailing spaces
       for (i in seq_along(soilcarbon_data)) {
         tab <- soilcarbon_data[[i]]
         for (j in seq_len(ncol(tab))) {
           tab[, j][grep("^[ ]+$", tab[, j])] <- NA
         }
         soilcarbon_data[[i]] <- tab
+        # trim empty rows
         soilcarbon_data[[i]] <- soilcarbon_data[[i]][rowSums(is.na(soilcarbon_data[[i]])) != ncol(soilcarbon_data[[i]]), ]
       }
 
@@ -152,14 +153,18 @@ compile <- function(dataset_directory,
       entry <- lapply(entry, function(x) lapply(x, as.character))
       entry <- lapply(entry, as.data.frame, stringsAsFactors = FALSE)
 
-      # Compare entry against data in existing database, "ISRaD_old"
+      # Compare entry against data in existing database, "ISRaD_old_list"
       diffs <- vector()
-      for (i in seq_along(ISRaD_old)) {
+      for (i in seq_along(ISRaD_old_list)) {
 
         # Check for entry, verify tables w/ nrow = 0, and ID diffs
         if (unique(entry[["metadata"]]["entry_name"]) %in% names(ISRaD_old_list[[i]])) {
           table <- ISRaD_old_list[[i]][[match(unique(entry[["metadata"]]["entry_name"]), names(ISRaD_old_list[[i]]))]]
-          diffs[i] <- ifelse(nrow(setdiff(entry[[i]], table)) == 0, 0, 1)
+          if (ncol(table) == ncol(entry[[i]])) {
+            diffs[i] <- ifelse(nrow(setdiff(entry[[i]], table)) == 0, 0, 1)
+          } else {
+            diffs[i] <- ifelse(nrow(entry[[i]]) == 0, 0, 1)
+          }
         } else {
           diffs[i] <- ifelse(nrow(entry[[i]]) == 0, 0, 1)
         }
@@ -214,19 +219,19 @@ compile <- function(dataset_directory,
     }
   }
 
-  # convert data to correct data type
-  ISRaD_database <- lapply(ISRaD_database, function(x) lapply(x, as.character))
-  ISRaD_database <- lapply(ISRaD_database, function(x) lapply(x, utils::type.convert))
-  ISRaD_database <- lapply(ISRaD_database, as.data.frame)
+  # convert data to correct data type and rename to "ISRaD_data"
+  ISRaD_data <- lapply(ISRaD_database, function(x) lapply(x, as.character))
+  ISRaD_data <- lapply(ISRaD_data, function(x) lapply(x, utils::type.convert))
+  ISRaD_data <- lapply(ISRaD_data, as.data.frame)
 
   # Return database file, logs, and reports ---------------------------------
   if (verbose) {
     cat("\n\n-------------\n", file = outfile, append = TRUE)
     cat("\nSummary statistics...\n", file = outfile, append = TRUE)
 
-    for (t in seq_along(names(ISRaD_database))) {
-      tab <- names(ISRaD_database)[t]
-      data_tab <- ISRaD_database[[tab]]
+    for (t in seq_along(names(ISRaD_data))) {
+      tab <- names(ISRaD_data)[t]
+      data_tab <- ISRaD_data[[tab]]
       cat("\n", tab, "tab...", file = outfile, append = TRUE)
       cat(nrow(data_tab), "observations", file = outfile, append = TRUE)
       if (nrow(data_tab) > 0) {
@@ -239,27 +244,27 @@ compile <- function(dataset_directory,
     }
   }
 
-  ISRaD_database_excel <- list(
-    metadata = rbind(template$metadata[-3, ], ISRaD_database$metadata),
-    site = rbind(template$site, ISRaD_database$site),
-    profile = rbind(template$profile, ISRaD_database$profile),
-    flux = rbind(template$flux, ISRaD_database$flux),
-    layer = rbind(template$layer, ISRaD_database$layer),
-    interstitial = rbind(template$interstitial, ISRaD_database$interstitial),
-    fraction = rbind(template$fraction, ISRaD_database$fraction),
-    incubation = rbind(template$incubation, ISRaD_database$incubation),
+  ISRaD_data_excel <- list(
+    metadata = rbind(template$metadata[-3, ], ISRaD_data$metadata),
+    site = rbind(template$site, ISRaD_data$site),
+    profile = rbind(template$profile, ISRaD_data$profile),
+    flux = rbind(template$flux, ISRaD_data$flux),
+    layer = rbind(template$layer, ISRaD_data$layer),
+    interstitial = rbind(template$interstitial, ISRaD_data$interstitial),
+    fraction = rbind(template$fraction, ISRaD_data$fraction),
+    incubation = rbind(template$incubation, ISRaD_data$incubation),
     `controlled vocabulary` <- controlled_vocab
   )
-  ISRaD_database_excel <- lapply(
-    ISRaD_database_excel,
+  ISRaD_data_excel <- lapply(
+    ISRaD_data_excel,
     function(x) {
       if (is.data.frame(x)) x %>% mutate_all(as.character)
     }
   )
 
   if (write_out) {
-    write_xlsx(ISRaD_database_excel,
-      path = file.path(dataset_directory, DB_DIR, LIST_FILE)
+    write_xlsx(ISRaD_data_excel,
+      path = file.path(dataset_directory, DB_DIR, "ISRaD_data.xlsx")
     )
   }
 
@@ -270,7 +275,7 @@ compile <- function(dataset_directory,
   }
 
   if (return_type == "list") {
-    return(ISRaD_database)
+    return(ISRaD_data)
   } else {
     return(NULL)
   }

@@ -2,7 +2,7 @@
 #'
 #' @description Checks template files for data coherence, formatting, and data entry errors
 #'
-#' @details This function can also be called from the ISRaD website (<http://soilradiocarbon.org>).
+#' @details This function can also be called from the \href{https://soilradiocarbon.org}{ISRaD website}.
 #' @param file File path for template file to be checked
 #' @param writeQCreport If TRUE, a text report of the QC output will be written to the outfile. Default is FALSE
 #' @param outfile_QAQC Filename of the output file (if writeQCreport is TRUE). Default is NULL, with the outfile being written to the directory where the template file is stored and named according to the file being checked.
@@ -10,10 +10,12 @@
 #' @param dataReport Prints list structure of database. Default is FALSE.
 #' @param checkdoi Set to FALSE if you do not want the QAQC check to validate DOIs (if TRUE this will be time consuming). Default is TRUE.
 #' @param verbose Set to TRUE to print results of function to console. Default is TRUE.
+#' @param local Set to FALSE to fetch most up-to-date template and template info files. If TRUE, the local files or files from CRAN package will be used. Default is TRUE.
 #' @import dplyr
 #' @importFrom RCurl url.exists
 #' @importFrom readxl read_excel excel_sheets
 #' @importFrom httr HEAD
+#' @importFrom rio import
 #' @export
 #' @examples
 #' \donttest{
@@ -30,7 +32,7 @@
 #' }
 #'
 QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = TRUE,
-                 dataReport = FALSE, checkdoi = TRUE, verbose = TRUE) {
+                 dataReport = FALSE, checkdoi = TRUE, verbose = TRUE, local = TRUE) {
   stopifnot(is.character(file))
   stopifnot(is.logical(writeQCreport))
   stopifnot(is.character(outfile_QAQC))
@@ -72,17 +74,54 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
   vcat("\n\nChecking file format compatibility with ISRaD templates...")
 
   # get tabs for data and current template files from R package on github
-  template_file <- system.file("extdata", "ISRaD_Master_Template.xlsx", package = "ISRaD")
-  template <- read_template_file(template_file)
-  template_info_file <- system.file("extdata", "ISRaD_Template_Info.xlsx", package = "ISRaD")
-  template_info <- read_template_info_file(template_info_file)
+  if (local == TRUE) {
+    template_file <- system.file("extdata", "ISRaD_Master_Template.xlsx", package = "ISRaD")
+    template <- read_template_file(template_file)
+  } else { # Download newest template file from GitHub
+    vcat("\n\nFetching newest versions of template and template info file...")
+    template <- list() # One sheet at a time, for now
+    for (i in 1:9) {
+      template[[i]] <- import(
+        file = "https://github.com/International-Soil-Radiocarbon-Database/ISRaD/blob/main/Rpkg/inst/extdata/ISRaD_Master_Template.xlsx?raw=true",
+        which = i
+      )
+      names(template)[i] <- c(
+        "metadata", "site", "profile", "flux", "layer",
+        "interstitial", "fraction", "incubation", "controlled vocabulary"
+      )[i]
+    }
+  }
+
+  if (local == TRUE) {
+    template_info_file <- system.file("extdata", "ISRaD_Template_Info.xlsx", package = "ISRaD")
+    template_info <- read_template_info_file(template_info_file)
+  } else { # Download newest template info file from GitHub
+    template_info <- list() # One sheet at a time, for now
+    for (i in 1:9) {
+      template_info[[i]] <- import(
+        file = "https://github.com/International-Soil-Radiocarbon-Database/ISRaD/blob/main/Rpkg/inst/extdata/ISRaD_Template_Info.xlsx?raw=true",
+        which = i
+      )
+      names(template_info)[i] <- c(
+        "README", "metadata", "site", "profile", "flux", "layer",
+        "interstitial", "fraction", "incubation"
+      )[i]
+    }
+  }
 
   check_template_info_columns(template, template_info, outfile_QAQC, verbose)
 
-  if (all(excel_sheets(file) %in% names(template))) {
-    vcat("\n Template format detected: ", basename(template_file))
-    vcat("\n Template info file to be used for QAQC: ", basename(template_info_file))
+  if (local == TRUE) {
+    if (all(excel_sheets(file) %in% names(template))) {
+      vcat("\n Template format detected: ", basename(template_file))
+      vcat("\n Template info file to be used for QAQC: ", basename(template_info_file))
 
+      data <- lapply(excel_sheets(file)[1:8], function(s) data.frame(read_excel(file, sheet = s)))
+      names(data) <- excel_sheets(file)[1:8]
+    }
+  } else {
+    vcat("\n Template format detected: ISRaD_Master_Template.xlsx from GitHub")
+    vcat("\n Template info file to be used for QAQC: ISRaD_Template_Info.xlsx from GitHub")
     data <- lapply(excel_sheets(file)[1:8], function(s) data.frame(read_excel(file, sheet = s)))
     names(data) <- excel_sheets(file)[1:8]
   }
@@ -194,7 +233,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
   }
 
   duplicates <- data$site %>%
-    select(.data$entry_name, .data$site_lat, .data$site_long) %>%
+    dplyr::select(.data$entry_name, .data$site_lat, .data$site_long) %>%
     duplicated() %>%
     which()
   if (length(duplicates) > 0) {
@@ -202,7 +241,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
     error <- error + 1
   }
   duplicates <- data$site %>%
-    select(.data$entry_name, .data$site_name) %>%
+    dplyr::select(.data$entry_name, .data$site_name) %>%
     duplicated() %>%
     which()
   if (length(duplicates) > 0) {
@@ -250,7 +289,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
   }
 
   duplicates <- data$profile %>%
-    select(.data$entry_name, .data$site_name, .data$pro_name) %>%
+    dplyr::select(.data$entry_name, .data$site_name, .data$pro_name) %>%
     duplicated() %>%
     which()
   if (length(duplicates) > 0) {
@@ -312,7 +351,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
 
     if ("flx_name" %in% colnames(data$flux)) {
       duplicates <- data$flux %>%
-        select("entry_name", "site_name", "pro_name", "flx_name") %>%
+        dplyr::select("entry_name", "site_name", "pro_name", "flx_name") %>%
         duplicated() %>%
         which()
       if (length(duplicates) > 0) {
@@ -321,7 +360,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
       }
     } else {
       duplicates <- data$flux %>%
-        select("entry_name", "site_name", "pro_name") %>%
+        dplyr::select("entry_name", "site_name", "pro_name") %>%
         duplicated() %>%
         which()
       if (length(duplicates) > 0) {
@@ -384,7 +423,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
     }
 
     duplicates <- data$layer %>%
-      select(ends_with("name")) %>%
+      dplyr::select(ends_with("name")) %>%
       duplicated() %>%
       which()
     if (length(duplicates) > 0) {
@@ -452,7 +491,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
     }
 
     duplicates <- data$interstitial %>%
-      select(ends_with("name")) %>%
+      dplyr::select(ends_with("name")) %>%
       duplicated() %>%
       which()
     if (length(duplicates) > 0) {
@@ -533,7 +572,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
     # }
 
     duplicates <- data$fraction %>%
-      select(ends_with("name")) %>%
+      dplyr::select(ends_with("name")) %>%
       duplicated() %>%
       which()
     if (length(duplicates) > 0) {
@@ -606,7 +645,7 @@ QAQC <- function(file, writeQCreport = FALSE, outfile_QAQC = "", summaryStats = 
     }
 
     duplicates <- data$incubation %>%
-      select(ends_with("name")) %>%
+      dplyr::select(ends_with("name")) %>%
       duplicated() %>%
       which()
     if (length(duplicates) > 0) {
