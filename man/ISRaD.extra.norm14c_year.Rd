@@ -20,7 +20,7 @@ ISRaD.extra.norm14c_year(
 
 \item{obs_year}{column name in df with year in which obs_d14c was observed (sample collection year) OR numeric value}
 
-\item{atm_zone}{column name in df with atmospheric zone for obs_d14c OR character string. Notes: column values/character string must be one of c("NHc14", "SHc14", "Tropicsc14"). "NHc14" = > 30 degrees latitude; "SHc14" = < -30 latitude; "Tropicsc14" = < 30 & > -30 degrees latitude.}
+\item{atm_zone}{column name in df with atmospheric zone for obs_d14c OR character string. Notes: column values/character string must be one of c("NH14C", "SH14C"). "NH14C" > 0 degrees latitude N; "SHC14" > 0 latitude S.}
 
 \item{norm_year}{desired normalization year (numeric)}
 
@@ -63,7 +63,7 @@ database.x <- ISRaD.extra.calc_atm14c(database.x)
 database.x$layer <- ISRaD.extra.norm14c_year(
   obs_d14c = "lyr_14c",
   obs_year = "lyr_obs_date_y",
-  atm_zone = "pro_graven_zone",
+  atm_zone = "pro_atm_zone",
   norm_year = 2010,
   tau = TRUE,
   df = database.x$layer,
@@ -73,12 +73,12 @@ database.x$layer <- ISRaD.extra.norm14c_year(
 ISRaD.extra.norm14c_year(
   obs_d14c = 182.8958,
   obs_year = 1996,
-  atm_zone = "NHc14",
+  atm_zone = "NH14C",
   norm_year = 2010
 )
 }
 \references{
-Gaudinski et al. 2000. Soil carbon cycling in a temperate forest: radiocarbon-based estimates of residence times, sequestration rates and partitioning of fluxes. Biogeochemistry 51: 33–69 \doi{10.1023/A:1006301010014}\cr\cr
+Gaudinski et al. 2000. Soil carbon cycling in a temperate forest: radiocarbon-based estimates of residence times, sequestration rates and partitioning of fluxes. Biogeochemistry 51: 33-69 \doi{10.1023/A:1006301010014}\cr\cr
 Trumbore, S. 2000. Age of Soil Organic Matter and Soil Respiration: Radiocarbon Constraints on Belowground C Dynamics. Ecological Applications, 10(2): 399–411 \doi{10.2307/2641102}
 }
 \author{

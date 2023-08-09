@@ -2,11 +2,11 @@
 #'
 #' @description Fills country code from profile coordinates
 #' @param database ISRaD dataset object.
-#' @param continent Boolean noting whether a column should be added for extracted continent (6 continent model: "Eurasia")
-#' @param region Boolean noting whether a column should be added for extracted region (7 continent model: "Europe", "Asia")
+#' @param continent Boolean noting whether a column should be added for extracted continent (8 continent model, including Oceania)
+#' @param region Boolean noting whether a column should be added for extracted subregion
 #' @author Shane Stoner & J. Beem-Miller
-#' @importFrom rworldmap getMap
-#' @importFrom sp over SpatialPoints CRS proj4string
+#' @importFrom rnaturalearth ne_countries
+#' @importFrom sf sf_use_s2 st_as_sf st_crs st_intersects
 #' @export
 #' @return ISRaD_data object with extracted country names.
 #' @examples
@@ -19,20 +19,31 @@
 ISRaD.extra.fill_country <- function(database, continent = FALSE, region = FALSE) {
   stopifnot(is_israd_database(database))
 
+  # turn off spherical geometry
+  suppressMessages(sf_use_s2(FALSE))
+
+  # get world map
+  countries_sf <- ne_countries(
+    scale = 110,
+    type = "countries",
+    returnclass = "sf"
+  )
+
   # get profile coordinates
-  points <- data.frame(database$profile$pro_long, database$profile$pro_lat)
-  countriesSP <- getMap(resolution = "low")
+  points <- st_as_sf(database$profile[ , c("pro_long", "pro_lat")],
+                     coords = c("pro_long", "pro_lat"),
+                     crs = st_crs(countries_sf))
 
-  # convert points to sp object and set CRS from rworldmap
-  pointsSP <- SpatialPoints(points, proj4string = CRS(proj4string(countriesSP)))
-
-  # find country polygon for each pair of coords
-  indices <- over(pointsSP, countriesSP)
+  # find intersections
+  pt_int <- suppressWarnings(suppressMessages(st_intersects(points, countries_sf)))  
 
   # return country, and continent/region as needed
-  database$profile$pro_country <- indices$ADMIN
-  if (continent) database$profile$pro_continent <- indices$continent # 6 continent model
-  if (region) database$profile$pro_region <- indices$REGION # 7 continent model
+  database$profile$pro_country <- pt_int$name
+  if (continent) database$profile$pro_continent <- pt_int$continent # 8 continent model
+  if (region) database$profile$pro_region <- pt_int$subregion # subregional model
+
+ # turn spherical geometry back on
+  suppressMessages(sf_use_s2(TRUE))
 
   # return
   return(database)

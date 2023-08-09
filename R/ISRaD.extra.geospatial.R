@@ -15,7 +15,8 @@
 #' 5) Data units (e.g. mmyr for mean annual precipitation)\cr
 #' 6) Any relevant notes\cr\cr
 #' Coordinate reference system can be specified with the "CRS" argument; default is WGS84. Note that all files in geodata_directory must use the same CRS.\cr\cr
-#' @importFrom raster raster extract crs
+#' @importFrom terra rast crs extract
+#' @importFrom dplyr bind_rows arrange
 #' @export
 #' @return Updated ISRaD_extra object with new columns at the profile level
 #' @examples
@@ -42,10 +43,15 @@ ISRaD.extra.geospatial <- function(database,
     data.frame(t(x))
   })
   df <- do.call(rbind, list.df)
-  df.sp <- lapply_df(unsplit(lapply(
-    split(df, df[1]),
-    function(x) x[order(x[2]), ]
-  ), df[1]), as.character)
+  df.sp <- bind_rows(lapply(
+    split(df, df[1]), function(x) 
+    if (any(x$X2 == "x")) {
+      x
+    } else {
+      arrange(x, as.numeric(x$X2)) 
+    }
+  ))
+
   gs.files.list <- unlist(lapply(seq_len(nrow(df.sp)), function(x) {
     x <- paste(unlist(as.character(df.sp[x, ])), collapse = "_")
     file.path(geodata_directory, x)
@@ -55,10 +61,17 @@ ISRaD.extra.geospatial <- function(database,
     shortx <- substr(x, start = nchar(geodata_directory) + 2, stop = nchar(x))
     varName <- substr(shortx, 1, regexpr("\\.[^\\.]*$", shortx)[[1]] - 1)
     columnName <- paste0("pro_", paste(unlist(strsplit(varName, "_x")), collapse = ""))
-    tifRaster <- raster(x)
-    raster::crs(tifRaster) <- CRS
-    database$profile <- cbind(database$profile, raster::extract(tifRaster, cbind(database$profile$pro_long, database$profile$pro_lat)))
-    colnames(database$profile) <- replace(colnames(database$profile), length(colnames(database$profile)), columnName)
+    tifRaster <- rast(x)
+    terra::crs(tifRaster) <- CRS
+    ext <- extract(tifRaster, cbind(database$profile$pro_long, database$profile$pro_lat))
+    if (ncol(ext) > 1) {
+      ext.nms <- sapply(strsplit(names(ext), "_(?!.*_)", perl = TRUE), "[[", 2)
+      names(ext) <- paste0(columnName, "_", ext.nms)
+      database$profile <- cbind(database$profile, ext)
+    } else {
+      database$profile <- cbind(database$profile, ext)
+      colnames(database$profile) <- replace(colnames(database$profile), length(colnames(database$profile)), columnName) 
+    }
   }
 
   return(database)
